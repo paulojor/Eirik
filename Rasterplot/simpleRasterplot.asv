@@ -1,0 +1,67 @@
+function normBins = simpleRasterplot(AP,index,protocol,saveoption)
+
+APtimes=AP(index).APtimes;
+Ntrials=size(APtimes,1);
+
+%% 
+%creates a simple rasterplot.
+f1=figure;
+hold on;
+axis([0 protocol.duration*1000 0 Ntrials])
+
+for i=1:Ntrials
+    for j=1:length(APtimes{i})
+        plot([APtimes{i}(j)*1000 APtimes{i}(j)*1000],[i-1 i],'k');
+    end
+end
+
+pgon = polyshape([protocol.startLightStim*1000 protocol.startLightStim*1000 ...
+    (protocol.startLightStim+protocol.durationLightStim)*1000 (protocol.startLightStim+protocol.durationLightStim)*1000],[Ntrials 0 0 Ntrials]);
+h = plot(pgon);
+h.EdgeAlpha = 0;
+
+xlabel('Time (ms)');
+
+if saveoption
+    saveas(f1,strcat('Rasterplot_',num2str(index)),'fig');
+    close(f1);
+end
+
+%%
+%creates an histogram. 
+
+totalAPtimes=[];
+for i=1:Ntrials
+    totalAPtimes=horzcat(totalAPtimes,APtimes{i}*1000);
+end
+totalAPtimes=sort(totalAPtimes);
+% nbins=ceil((max(totalAPtimes)-min(totalAPtimes))/50);
+nbins=protocol.duration/protocol.histBinDur;
+edges=0:protocol.histBinDur*1000:protocol.duration*1000;
+bins=zeros(1,nbins);
+for i=1:nbins
+    lborder=(i-1)*protocol.histBinDur*1000;
+    hborder=i*protocol.histBinDur*1000;
+    low=totalAPtimes>lborder;
+    high=totalAPtimes<hborder;
+    bins(i)=sum(low.*high);
+end
+
+normBins=bins/max(bins);
+    
+f2=figure;
+hold on;
+h1 = histogram('BinEdges',edges,'BinCounts',bins);
+h1.FaceColor='k';
+axis([0 protocol.duration*1000 0 max(h1.Values)]);
+
+pgon = polyshape([protocol.startLightStim*1000 protocol.startLightStim*1000 ...
+    (protocol.startLightStim+protocol.durationLightStim)*1000 (protocol.startLightStim+protocol.durationLightStim)*1000],[max(h1.Values) 0 0 max(h1.Values)]);
+h2 = plot(pgon);
+h2.EdgeAlpha = 0;
+
+if saveoption
+    saveas(f2,strcat('Histogram_',num2str(index)),'fig');
+    close(f2);
+end
+end
